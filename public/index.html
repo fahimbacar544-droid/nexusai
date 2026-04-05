@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NexusAI — Agent IA pour entreprises</title>
+<script src="https://js.stripe.com/v3/"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --blue: #185FA5; --blue-light: #E6F1FB; --green: #3B6D11; --text: #1a1a1a; --muted: #6b7280; --border: #e5e7eb; --bg: #ffffff; --surface: #f9fafb; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--text); background: var(--bg); }
+  nav { display: flex; align-items: center; justify-content: space-between; padding: 18px 40px; border-bottom: 1px solid var(--border); }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 18px; text-decoration: none; color: var(--text); }
+  .logo-icon { width: 32px; height: 32px; background: var(--blue); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+  .logo-icon svg { width: 18px; height: 18px; fill: white; }
+  .nav-btn { background: var(--blue); color: white; border: none; padding: 9px 20px; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: 500; }
+  .hero { text-align: center; padding: 80px 20px 60px; max-width: 700px; margin: 0 auto; }
+  .badge { display: inline-block; background: var(--blue-light); color: var(--blue); font-size: 12px; font-weight: 500; padding: 4px 14px; border-radius: 20px; margin-bottom: 20px; }
+  h1 { font-size: clamp(32px, 5vw, 52px); font-weight: 700; line-height: 1.15; margin-bottom: 20px; letter-spacing: -0.02em; }
+  h1 span { color: var(--blue); }
+  .subtitle { font-size: 18px; color: var(--muted); line-height: 1.6; margin-bottom: 36px; max-width: 520px; margin-left: auto; margin-right: auto; }
+  .hero-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .btn-primary { background: var(--blue); color: white; border: none; padding: 14px 28px; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; }
+  .btn-secondary { background: white; color: var(--text); border: 1px solid var(--border); padding: 14px 28px; border-radius: 10px; font-size: 16px; cursor: pointer; }
+  .hero-note { margin-top: 14px; font-size: 13px; color: var(--muted); }
+  .features { background: var(--surface); padding: 70px 20px; }
+  .features-inner { max-width: 1000px; margin: 0 auto; }
+  .section-label { text-align: center; font-size: 13px; font-weight: 500; color: var(--blue); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  h2 { text-align: center; font-size: 32px; font-weight: 700; margin-bottom: 48px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; }
+  .card { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+  .card-icon { width: 40px; height: 40px; background: var(--blue-light); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
+  .card-icon svg { width: 20px; height: 20px; fill: var(--blue); }
+  .card h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+  .card p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+  .pricing { padding: 70px 20px; max-width: 480px; margin: 0 auto; text-align: center; }
+  .price-card { background: white; border: 2px solid var(--blue); border-radius: 16px; padding: 36px 32px; }
+  .popular { background: var(--blue); color: white; font-size: 11px; font-weight: 600; padding: 4px 14px; border-radius: 20px; display: inline-block; margin-bottom: 20px; }
+  .price-card h3 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+  .price { font-size: 52px; font-weight: 800; color: var(--blue); letter-spacing: -0.03em; }
+  .price span { font-size: 18px; color: var(--muted); font-weight: 400; }
+  .desc { font-size: 14px; color: var(--muted); margin-bottom: 28px; }
+  .features-list { text-align: left; margin-bottom: 28px; display: flex; flex-direction: column; gap: 10px; }
+  .feature-item { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+  .check { width: 18px; height: 18px; background: #EAF3DE; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .check svg { width: 10px; height: 10px; fill: var(--green); }
+  .price-note { font-size: 12px; color: var(--muted); margin-top: 12px; }
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: white; border-radius: 16px; padding: 32px; width: 100%; max-width: 420px; }
+  .modal h3 { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+  .modal-sub { font-size: 14px; color: var(--muted); margin-bottom: 24px; }
+  .form-group { margin-bottom: 16px; }
+  .form-group label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; }
+  .form-group input { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; outline: none; }
+  #card-element { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+  #card-errors { color: #dc2626; font-size: 13px; margin-top: 8px; min-height: 20px; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+  .btn-cancel { flex: 1; padding: 11px; border: 1px solid var(--border); border-radius: 8px; background: white; cursor: pointer; font-size: 14px; }
+  .btn-pay { flex: 2; padding: 11px; background: var(--blue); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .btn-pay:disabled { opacity: 0.6; cursor: not-allowed; }
+  .secure-note { text-align: center; font-size: 12px; color: var(--muted); margin-top: 12px; }
+  .success-screen { display: none; text-align: center; padding: 40px 20px; }
+  .success-screen.show { display: block; }
+  .success-icon { width: 60px; height: 60px; background: #EAF3DE; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+  .success-icon svg { width: 28px; height: 28px; fill: var(--green); }
+  footer { border-top: 1px solid var(--border); padding: 24px 40px; text-align: center; font-size: 13px; color: var(--muted); }
+</style>
+</head>
+<body>
+<nav>
+  <a class="logo" href="#">
+    <div class="logo-icon"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg></div>
+    NexusAI
+  </a>
+  <button class="nav-btn" onclick="openModal()">Démarrer — 120€/mois</button>
+</nav>
+<section class="hero">
+  <div class="badge">Agent IA pour entreprises</div>
+  <h1>Votre assistant IA<br><span>intelligent & disponible</span><br>24h/24</h1>
+  <p class="subtitle">Automatisez vos tâches, répondez à vos clients, analysez vos données. Un agent IA sur mesure pour votre entreprise.</p>
+  <div class="hero-cta">
+    <button class="btn-primary" onclick="openModal()">Commencer pour 120€/mois</button>
+    <button class="btn-secondary" onclick="document.querySelector('.features').scrollIntoView({behavior:'smooth'})">Voir les fonctionnalités</button>
+  </div>
+  <p class="hero-note">Sans engagement · Résiliation en 1 clic · Facture automatique</p>
+</section>
+<section class="features">
+  <div class="features-inner">
+    <div class="section-label">Fonctionnalités</div>
+    <h2>Tout ce dont votre entreprise a besoin</h2>
+    <div class="grid">
+      <div class="card"><div class="card-icon"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg></div><h3>Chat IA en temps réel</h3><p>Posez vos questions, rédigez des emails, obtenez des analyses instantanément.</p></div>
+      <div class="card"><div class="card-icon"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg></div><h3>Tableau de bord</h3><p>Suivez l'usage, les économies de temps et la productivité de votre équipe.</p></div>
+      <div class="card"><div class="card-icon"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg></div><h3>Données sécurisées</h3><p>Vos données restent privées. Chiffrement de bout en bout, hébergé en Europe.</p></div>
+      <div class="card"><div class="card-icon"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div><h3>Intégrations</h3><p>Connectez vos outils existants : Slack, Gmail, Notion, et plus encore.</p></div>
+    </div>
+  </div>
+</section>
+<section class="pricing">
+  <div class="section-label">Tarif</div>
+  <h2>Simple et transparent</h2>
+  <div class="price-card">
+    <div class="popular">PLUS POPULAIRE</div>
+    <h3>Pro Entreprise</h3>
+    <div class="price">120€ <span>/ mois</span></div>
+    <div class="desc">Par entreprise · Utilisateurs illimités</div>
+    <div class="features-list">
+      <div class="feature-item"><div class="check"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg></div>Agent IA illimité 24h/24</div>
+      <div class="feature-item"><div class="check"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg></div>Tableau de bord & analytics</div>
+      <div class="feature-item"><div class="check"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg></div>Support prioritaire</div>
+      <div class="feature-item"><div class="check"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg></div>Factures automatiques</div>
+      <div class="feature-item"><div class="check"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg></div>Résiliation sans engagement</div>
+    </div>
+    <button class="btn-primary" style="width:100%;font-size:16px;padding:14px" onclick="openModal()">S'abonner maintenant</button>
+    <p class="price-note">Paiement sécurisé par Stripe · Prélèvement automatique chaque mois</p>
+  </div>
+</section>
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div id="form-screen">
+      <h3>Démarrer votre abonnement</h3>
+      <p class="modal-sub">120€/mois · Sans engagement · Résiliable à tout moment</p>
+      <div class="form-group"><label>Nom de l'entreprise</label><input type="text" id="company" placeholder="Acme Corp" /></div>
+      <div class="form-group"><label>Email professionnel</label><input type="email" id="email" placeholder="contact@acme.fr" /></div>
+      <div class="form-group"><label>Carte bancaire</label><div id="card-element"></div><div id="card-errors"></div></div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+        <button class="btn-pay" id="pay-btn" onclick="handlePayment()">Payer 120€/mois</button>
+      </div>
+      <p class="secure-note">🔒 Paiement sécurisé par Stripe · Données chiffrées</p>
+    </div>
+    <div class="success-screen" id="success-screen">
+      <div class="success-icon"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg></div>
+      <h3>Bienvenue !</h3>
+      <p style="color:#6b7280;margin-top:8px;font-size:14px">Abonnement actif. Vérifiez votre email.</p>
+      <button class="btn-primary" style="margin-top:24px;padding:12px 28px" onclick="closeModal()">Accéder à mon agent</button>
+    </div>
+  </div>
+</div>
+<footer>© 2025 NexusAI · Paiements sécurisés par Stripe</footer>
+<script>
+const stripe = Stripe('pk_live_51T01v5IyYnL9CjZhd5uI4WB2t45DEkjgFsMGrNWDM25RBBmNKF3KQRohI05VLJ1pTDrWKomMtuG36DnBjKEbOpWo00Kt3qgbmK');
+const elements = stripe.elements();
+const cardEl = elements.create('card', { style: { base: { fontSize: '14px', color: '#1a1a1a' } } });
+let cardMounted = false;
+function openModal() {
+  document.getElementById('modal').classList.add('open');
+  if (!cardMounted) { cardEl.mount('#card-element'); cardMounted = true; }
+  cardEl.on('change', e => { document.getElementById('card-errors').textContent = e.error ? e.error.message : ''; });
+}
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+  document.getElementById('form-screen').style.display = 'block';
+  document.getElementById('success-screen').classList.remove('show');
+}
+async function handlePayment() {
+  const btn = document.getElementById('pay-btn');
+  const email = document.getElementById('email').value.trim();
+  const company = document.getElementById('company').value.trim();
+  if (!email || !company) { document.getElementById('card-errors').textContent = 'Veuillez remplir tous les champs.'; return; }
+  btn.disabled = true; btn.textContent = 'Traitement...';
+  try {
+    const res = await fetch('/api/create-subscription', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, company }) });
+    const { clientSecret, error } = await res.json();
+    if (error) throw new Error(error);
+    const result = await stripe.confirmCardPayment(clientSecret, { payment_method: { card: cardEl, billing_details: { email, name: company } } });
+    if (result.error) { document.getElementById('card-errors').textContent = result.error.message; }
+    else { document.getElementById('form-screen').style.display = 'none'; document.getElementById('success-screen').classList.add('show'); }
+  } catch(e) { document.getElementById('card-errors').textContent = e.message || 'Erreur. Réessayez.'; }
+  btn.disabled = false; btn.textContent = 'Payer 120€/mois';
+}
+</script>
+</body>
+</html>
