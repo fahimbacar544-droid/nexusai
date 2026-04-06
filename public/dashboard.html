@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NexusAI — Votre Agent IA</title>
+<script src="https://cdn.jsdelivr.net/npm/@vapi-ai/web@latest/dist/vapi.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--blue:#185FA5;--blue-light:#E6F1FB;--green:#3B6D11;--text:#1a1a1a;--muted:#6b7280;--border:#e5e7eb;--bg:#ffffff;--surface:#f9fafb}
@@ -62,6 +63,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:va
 .typing span:nth-child(2){animation-delay:0.2s}
 .typing span:nth-child(3){animation-delay:0.4s}
 @keyframes blink{0%,60%,100%{opacity:.3}30%{opacity:1}}
+
+/* Appel IA */
+.call-mode{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:40px}
+.call-circle{width:120px;height:120px;border-radius:50%;background:var(--blue-light);display:flex;align-items:center;justify-content:center;position:relative}
+.call-circle svg{width:50px;height:50px;fill:var(--blue)}
+.call-circle.active{background:var(--blue)}
+.call-circle.active svg{fill:white}
+.call-circle.active::after{content:'';position:absolute;width:140px;height:140px;border-radius:50%;border:3px solid var(--blue);opacity:0.4;animation:pulse 1.5s infinite}
+@keyframes pulse{0%{transform:scale(1);opacity:0.4}100%{transform:scale(1.3);opacity:0}}
+.call-status{font-size:18px;font-weight:600;color:var(--text)}
+.call-sub{font-size:13px;color:var(--muted);text-align:center;max-width:320px;line-height:1.6}
+.call-btn{padding:14px 36px;border-radius:50px;font-size:15px;font-weight:600;cursor:pointer;border:none;transition:all 0.2s}
+.call-btn.start{background:var(--blue);color:white}
+.call-btn.start:hover{background:#1450a0}
+.call-btn.stop{background:#fee2e2;color:#dc2626}
+.call-btn.stop:hover{background:#fecaca}
+.call-info{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px;max-width:420px;width:100%}
+.call-info-title{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px}
+.call-info-item{display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:6px}
+.call-info-item svg{width:14px;height:14px;fill:var(--blue);flex-shrink:0}
 </style>
 </head>
 <body>
@@ -75,6 +96,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:va
       <div class="nav-title">Assistant</div>
       <button class="nav-item active" onclick="switchMode('chat',this)">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>Chat IA
+      </button>
+      <button class="nav-item" onclick="switchMode('call',this)">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>Appel IA
       </button>
       <button class="nav-item" onclick="switchMode('tools',this)">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/></svg>Outils métier
@@ -106,6 +130,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:va
     <div class="topbar-title" id="mode-title">Assistant IA</div>
     <div class="status"><div class="dot"></div>En ligne</div>
   </div>
+
+  <!-- MODE CHAT -->
   <div class="mode active" id="mode-chat">
     <div class="messages" id="messages">
       <div class="msg">
@@ -124,13 +150,159 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:va
       <button class="send-btn" onclick="sendMessage()"><svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg></button>
     </div>
   </div>
+
+  <!-- MODE APPEL IA -->
+  <div class="mode" id="mode-call">
+    <div class="call-mode">
+      <div class="call-circle" id="call-circle">
+        <svg viewBox="0 0 24 24"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
+      </div>
+      <div class="call-status" id="call-status">Agent vocal prêt</div>
+      <div class="call-sub" id="call-sub">Lancez un appel pour parler directement avec votre agent IA en français. Il peut prospecter, relancer des clients et répondre à leurs questions.</div>
+      <button class="call-btn start" id="call-btn" onclick="toggleCall()">🎙️ Démarrer l'appel</button>
+      <div class="call-info">
+        <div class="call-info-title">Ce que l'agent peut faire</div>
+        <div class="call-info-item"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>Appeler vos prospects automatiquement</div>
+        <div class="call-info-item"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>Relancer les devis sans réponse</div>
+        <div class="call-info-item"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>Répondre aux questions clients</div>
+        <div class="call-info-item"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>Voix naturelle en français</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODE OUTILS -->
   <div class="mode" id="mode-tools">
     <div class="tools-grid">
       <div class="tool-card" onclick="useTool('email')"><div class="tool-icon" style="background:#E6F1FB"><svg viewBox="0 0 24 24" fill="#185FA5"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg></div><div class="tool-name">Rédacteur d'emails</div><div class="tool-desc">Prospection, relance, réponse client, suivi — professionnels et personnalisés.</div></div>
       <div class="tool-card" onclick="useTool('devis')"><div class="tool-icon" style="background:#EAF3DE"><svg viewBox="0 0 24 24" fill="#3B6D11"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11zM8 15h8v2H8zm0-4h8v2H8zm0-4h5v2H8z"/></svg></div><div class="tool-name">Générateur de devis</div><div class="tool-desc">Devis complets avec lignes de service, prix HT/TTC, conditions et mentions légales.</div></div>
       <div class="tool-card" onclick="useTool('client')"><div class="tool-icon" style="background:#FBEAF0"><svg viewBox="0 0 24 24" fill="#993556"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg></div><div class="tool-name">Réponses clients</div><div class="tool-desc">Réclamations, messages difficiles, demandes d'informations — le bon ton à chaque fois.</div></div>
-      <div class="tool-card" onclick="useTool('appel')"><div class="tool-icon" style="background:#FAEEDA"><svg viewBox="0 0 24 24" fill="#BA7517"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg></div><div class="tool-name">Scripts d'appels</div><div class="tool-desc">Appels commerciaux, suivi, support — scripts efficaces et naturels.</div></div>
+      <div class="tool-card" onclick="switchMode('call',document.querySelectorAll('.nav-item')[1])"><div class="tool-icon" style="background:#FAEEDA"><svg viewBox="0 0 24 24" fill="#BA7517"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg></div><div class="tool-name">Appel IA vocal</div><div class="tool-desc">Parlez directement avec l'agent vocal — prospection et relance automatiques.</div></div>
       <div class="tool-card" onclick="useTool('contrat')"><div class="tool-icon" style="background:#E6F1FB"><svg viewBox="0 0 24 24" fill="#185FA5"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg></div><div class="tool-name">Rédaction contrats</div><div class="tool-desc">CGV, contrats de prestation, lettres de mission — clairs et professionnels.</div></div>
       <div class="tool-card" onclick="useTool('analyse')"><div class="tool-icon" style="background:#EAF3DE"><svg viewBox="0 0 24 24" fill="#3B6D11"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg></div><div class="tool-name">Analyse & Rapport</div><div class="tool-desc">Analysez vos données, générez des rapports, identifiez des opportunités.</div></div>
       <div class="tool-card" onclick="useTool('social')"><div class="tool-icon" style="background:#FBEAF0"><svg viewBox="0 0 24 24" fill="#993556"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg></div><div class="tool-name">Réseaux sociaux</div><div class="tool-desc">Posts LinkedIn, Instagram — contenu engageant pour votre marque.</div></div>
-      <div class="tool-card" onclick="useTool('rh')"><div class="tool-icon" style="background:#FAEEDA"><svg viewBox="0 0 24 24" fill="#BA7517"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.3
+      <div class="tool-card" onclick="useTool('rh')"><div class="tool-icon" style="background:#FAEEDA"><svg viewBox="0 0 24 24" fill="#BA7517"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div><div class="tool-name">RH & Recrutement</div><div class="tool-desc">Offres d'emploi, réponses candidats, onboarding — gérez vos ressources humaines.</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const VAPI_PUBLIC_KEY = 'db996adb-5f63-4abc-bbd8-1a209195a3a8';
+const VAPI_ASSISTANT_ID = '0b2c480c-2c83-42a9-b913-163a8dc510f9';
+const SYSTEM_PROMPT = `Tu es NexusAI, un agent IA professionnel pour entreprises. Tu es expert en : emails professionnels, devis, relation client, scripts d'appels, contrats, analyse de données, réseaux sociaux, RH. Réponds toujours en français, sois concis et fournis du contenu complet prêt à utiliser.`;
+
+let history = [], loading = false, callActive = false, vapi = null;
+
+// Init Vapi
+function initVapi() {
+  if (window.Vapi) {
+    vapi = new window.Vapi(VAPI_PUBLIC_KEY);
+    vapi.on('call-start', () => {
+      callActive = true;
+      document.getElementById('call-circle').classList.add('active');
+      document.getElementById('call-status').textContent = 'Appel en cours...';
+      document.getElementById('call-sub').textContent = "Parlez maintenant — l'agent vous écoute.";
+      document.getElementById('call-btn').className = 'call-btn stop';
+      document.getElementById('call-btn').textContent = '⏹ Terminer l\'appel';
+    });
+    vapi.on('call-end', () => {
+      callActive = false;
+      document.getElementById('call-circle').classList.remove('active');
+      document.getElementById('call-status').textContent = 'Appel terminé';
+      document.getElementById('call-sub').textContent = 'Merci ! Vous pouvez relancer un appel à tout moment.';
+      document.getElementById('call-btn').className = 'call-btn start';
+      document.getElementById('call-btn').textContent = '🎙️ Démarrer l\'appel';
+    });
+    vapi.on('error', () => {
+      document.getElementById('call-status').textContent = 'Erreur — réessayez';
+      document.getElementById('call-btn').className = 'call-btn start';
+      document.getElementById('call-btn').textContent = '🎙️ Démarrer l\'appel';
+    });
+  }
+}
+
+function toggleCall() {
+  if (!vapi) { initVapi(); }
+  if (!callActive) {
+    document.getElementById('call-status').textContent = 'Connexion...';
+    document.getElementById('call-btn').textContent = '...';
+    vapi.start(VAPI_ASSISTANT_ID);
+  } else {
+    vapi.stop();
+  }
+}
+
+function switchMode(mode, btn) {
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.mode').forEach(m => m.classList.remove('active'));
+  document.getElementById('mode-' + mode).classList.add('active');
+  const titles = { chat: 'Assistant IA', call: 'Appel IA vocal', tools: 'Outils métier' };
+  document.getElementById('mode-title').textContent = titles[mode];
+}
+
+function useTool(tool) {
+  const prompts = {
+    email: "Quel type d'email veux-tu rédiger ? (prospection, relance, réponse client, remerciement...)",
+    devis: "Je vais créer ton devis. Quel service tu vends, à qui, et pour quel montant approximatif ?",
+    client: "Colle-moi le message du client et je prépare une réponse professionnelle.",
+    appel: "Script d'appel pour quel contexte ? (prospection, relance, support, suivi...)",
+    contrat: "Quel document contractuel ? (CGV, contrat de prestation, lettre de mission, NDA...)",
+    analyse: "Partage-moi tes données ou chiffres à analyser.",
+    social: "Pour quelle plateforme et quel sujet ? (LinkedIn, Instagram...)",
+    rh: "RH : offre d'emploi, réponse candidat, ou processus onboarding ?"
+  };
+  switchMode('chat', document.querySelector('.nav-item'));
+  setTimeout(() => addMsg('ai', prompts[tool]), 100);
+}
+
+function sendQuick(text) {
+  switchMode('chat', document.querySelector('.nav-item'));
+  setTimeout(() => { document.getElementById('userInput').value = text; sendMessage(); }, 100);
+}
+
+function addMsg(role, text, typing = false) {
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg' + (role === 'user' ? ' user' : '');
+  const av = document.createElement('div');
+  av.className = 'avatar ' + (role === 'user' ? 'user' : 'ai');
+  av.textContent = role === 'user' ? 'Vous' : 'AI';
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble ' + (role === 'user' ? 'user' : 'ai');
+  if (typing) { bubble.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>'; div.id = 'typing-bubble'; }
+  else { bubble.innerHTML = text.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>'); }
+  div.appendChild(av); div.appendChild(bubble); msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+async function sendMessage() {
+  if (loading) return;
+  const input = document.getElementById('userInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = ''; input.style.height = 'auto';
+  addMsg('user', text);
+  history.push({ role: 'user', content: text });
+  loading = true; addMsg('ai', '', true);
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1000, system: SYSTEM_PROMPT, messages: history })
+    });
+    const data = await res.json();
+    const reply = data.content?.map(b => b.text||'').join('') || 'Erreur.';
+    document.getElementById('typing-bubble')?.remove();
+    addMsg('ai', reply);
+    history.push({ role: 'assistant', content: reply });
+  } catch(e) { document.getElementById('typing-bubble')?.remove(); addMsg('ai','Erreur de connexion.'); }
+  loading = false;
+}
+
+document.getElementById('userInput').addEventListener('keydown', e => { if (e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();} });
+document.getElementById('userInput').addEventListener('input', function(){ this.style.height='auto'; this.style.height=Math.min(this.scrollHeight,120)+'px'; });
+
+window.addEventListener('load', initVapi);
+</script>
+</body>
+</html>
